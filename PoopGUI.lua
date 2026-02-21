@@ -7,12 +7,10 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- Mevcut GUI'yi temizle
 if PlayerGui:FindFirstChild("PoopGUI") then
     PlayerGui.PoopGUI:Destroy()
 end
 
--- Değişkenler
 local poopCount = 1
 local minCount = 1
 local maxCount = 100
@@ -20,20 +18,20 @@ local isDragging = false
 local dragStart, startPos
 local isOnCooldown = false
 local isSending = false
-local COOLDOWN = 4.0  -- Scriptler bittikten sonra bekleme süresi (saniye)
+local COOLDOWN = 4.0
+local stepAmount = 5  -- varsayılan adım: 5
 
--- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PoopGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
 
--- Ana Frame (biraz büyütüldü)
+-- Ana Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 440)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -220)
+MainFrame.Size = UDim2.new(0, 320, 0, 530)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -265)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -52,7 +50,6 @@ MainGradient.Parent = MainFrame
 
 -- Başlık çubuğu
 local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 52)
 TitleBar.BackgroundColor3 = Color3.fromRGB(30, 22, 40)
 TitleBar.BorderSizePixel = 0
@@ -98,7 +95,6 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TitleBar
 
--- Kapat butonu
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -42, 0.5, -15)
@@ -109,16 +105,13 @@ CloseBtn.TextSize = 14
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.BorderSizePixel = 0
 CloseBtn.Parent = TitleBar
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
-CloseCorner.Parent = CloseBtn
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Ayırıcı çizgi
+-- Divider 1
 local Divider1 = Instance.new("Frame")
 Divider1.Size = UDim2.new(1, -40, 0, 1)
 Divider1.Position = UDim2.new(0, 20, 0, 62)
@@ -128,7 +121,6 @@ Divider1.BorderSizePixel = 0
 Divider1.Parent = MainFrame
 
 -- ─── BÖLÜM: MİKTAR ───
-
 local CountLabel = Instance.new("TextLabel")
 CountLabel.Size = UDim2.new(1, -40, 0, 26)
 CountLabel.Position = UDim2.new(0, 20, 0, 72)
@@ -140,22 +132,18 @@ CountLabel.Font = Enum.Font.GothamBold
 CountLabel.TextXAlignment = Enum.TextXAlignment.Left
 CountLabel.Parent = MainFrame
 
+-- Ana sayaç (− sayı +)
 local CounterFrame = Instance.new("Frame")
 CounterFrame.Size = UDim2.new(1, -40, 0, 60)
 CounterFrame.Position = UDim2.new(0, 20, 0, 100)
 CounterFrame.BackgroundColor3 = Color3.fromRGB(25, 18, 35)
 CounterFrame.BorderSizePixel = 0
 CounterFrame.Parent = MainFrame
-
-local CounterCorner = Instance.new("UICorner")
-CounterCorner.CornerRadius = UDim.new(0, 10)
-CounterCorner.Parent = CounterFrame
-
-local CounterStroke = Instance.new("UIStroke")
-CounterStroke.Color = Color3.fromRGB(139, 90, 43)
-CounterStroke.Transparency = 0.6
-CounterStroke.Thickness = 1
-CounterStroke.Parent = CounterFrame
+Instance.new("UICorner", CounterFrame).CornerRadius = UDim.new(0, 10)
+local cs = Instance.new("UIStroke", CounterFrame)
+cs.Color = Color3.fromRGB(139, 90, 43)
+cs.Transparency = 0.6
+cs.Thickness = 1
 
 local MinusBtn = Instance.new("TextButton")
 MinusBtn.Size = UDim2.new(0, 54, 1, -16)
@@ -167,10 +155,7 @@ MinusBtn.TextSize = 26
 MinusBtn.Font = Enum.Font.GothamBold
 MinusBtn.BorderSizePixel = 0
 MinusBtn.Parent = CounterFrame
-
-local MinusCorner = Instance.new("UICorner")
-MinusCorner.CornerRadius = UDim.new(0, 8)
-MinusCorner.Parent = MinusBtn
+Instance.new("UICorner", MinusBtn).CornerRadius = UDim.new(0, 8)
 
 local NumberDisplay = Instance.new("TextLabel")
 NumberDisplay.Size = UDim2.new(1, -124, 1, 0)
@@ -192,14 +177,87 @@ PlusBtn.TextSize = 26
 PlusBtn.Font = Enum.Font.GothamBold
 PlusBtn.BorderSizePixel = 0
 PlusBtn.Parent = CounterFrame
+Instance.new("UICorner", PlusBtn).CornerRadius = UDim.new(0, 8)
 
-local PlusCorner = Instance.new("UICorner")
-PlusCorner.CornerRadius = UDim.new(0, 8)
-PlusCorner.Parent = PlusBtn
+-- ─── BÖLÜM: ADIM SEÇİMİ ───
+local StepLabel = Instance.new("TextLabel")
+StepLabel.Size = UDim2.new(1, -40, 0, 22)
+StepLabel.Position = UDim2.new(0, 20, 0, 170)
+StepLabel.BackgroundTransparency = 1
+StepLabel.Text = "+ / − Adım Miktarı"
+StepLabel.TextColor3 = Color3.fromRGB(180, 140, 100)
+StepLabel.TextSize = 13
+StepLabel.Font = Enum.Font.GothamBold
+StepLabel.TextXAlignment = Enum.TextXAlignment.Left
+StepLabel.Parent = MainFrame
 
+-- Adım seçim frame
+local StepFrame = Instance.new("Frame")
+StepFrame.Size = UDim2.new(1, -40, 0, 44)
+StepFrame.Position = UDim2.new(0, 20, 0, 195)
+StepFrame.BackgroundColor3 = Color3.fromRGB(25, 18, 35)
+StepFrame.BorderSizePixel = 0
+StepFrame.Parent = MainFrame
+Instance.new("UICorner", StepFrame).CornerRadius = UDim.new(0, 10)
+local ss = Instance.new("UIStroke", StepFrame)
+ss.Color = Color3.fromRGB(100, 70, 150)
+ss.Transparency = 0.5
+ss.Thickness = 1
+
+-- +1 butonu
+local Step1Btn = Instance.new("TextButton")
+Step1Btn.Size = UDim2.new(0.33, -6, 1, -12)
+Step1Btn.Position = UDim2.new(0, 6, 0, 6)
+Step1Btn.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
+Step1Btn.Text = "+1"
+Step1Btn.TextColor3 = Color3.fromRGB(200, 255, 200)
+Step1Btn.TextSize = 15
+Step1Btn.Font = Enum.Font.GothamBold
+Step1Btn.BorderSizePixel = 0
+Step1Btn.Parent = StepFrame
+Instance.new("UICorner", Step1Btn).CornerRadius = UDim.new(0, 7)
+
+-- +5 butonu
+local Step5Btn = Instance.new("TextButton")
+Step5Btn.Size = UDim2.new(0.33, -6, 1, -12)
+Step5Btn.Position = UDim2.new(0.33, 3, 0, 6)
+Step5Btn.BackgroundColor3 = Color3.fromRGB(80, 50, 10)
+Step5Btn.Text = "+5"
+Step5Btn.TextColor3 = Color3.fromRGB(255, 200, 100)
+Step5Btn.TextSize = 15
+Step5Btn.Font = Enum.Font.GothamBold
+Step5Btn.BorderSizePixel = 0
+Step5Btn.Parent = StepFrame
+Instance.new("UICorner", Step5Btn).CornerRadius = UDim.new(0, 7)
+
+-- +10 butonu
+local Step10Btn = Instance.new("TextButton")
+Step10Btn.Size = UDim2.new(0.33, -6, 1, -12)
+Step10Btn.Position = UDim2.new(0.66, 0, 0, 6)
+Step10Btn.BackgroundColor3 = Color3.fromRGB(80, 50, 10)
+Step10Btn.Text = "+10"
+Step10Btn.TextColor3 = Color3.fromRGB(255, 200, 100)
+Step10Btn.TextSize = 15
+Step10Btn.Font = Enum.Font.GothamBold
+Step10Btn.BorderSizePixel = 0
+Step10Btn.Parent = StepFrame
+Instance.new("UICorner", Step10Btn).CornerRadius = UDim.new(0, 7)
+
+-- Seçili adım göstergesi
+local StepIndicator = Instance.new("TextLabel")
+StepIndicator.Size = UDim2.new(1, -40, 0, 18)
+StepIndicator.Position = UDim2.new(0, 20, 0, 243)
+StepIndicator.BackgroundTransparency = 1
+StepIndicator.Text = "Seçili adım: +1"
+StepIndicator.TextColor3 = Color3.fromRGB(150, 220, 150)
+StepIndicator.TextSize = 12
+StepIndicator.Font = Enum.Font.Gotham
+StepIndicator.Parent = MainFrame
+
+-- Min/Max ve tahmini süre
 local RangeLabel = Instance.new("TextLabel")
-RangeLabel.Size = UDim2.new(1, -40, 0, 20)
-RangeLabel.Position = UDim2.new(0, 20, 0, 165)
+RangeLabel.Size = UDim2.new(1, -40, 0, 18)
+RangeLabel.Position = UDim2.new(0, 20, 0, 262)
 RangeLabel.BackgroundTransparency = 1
 RangeLabel.Text = "Min: 1  |  Max: 100"
 RangeLabel.TextColor3 = Color3.fromRGB(100, 80, 60)
@@ -207,10 +265,9 @@ RangeLabel.TextSize = 12
 RangeLabel.Font = Enum.Font.Gotham
 RangeLabel.Parent = MainFrame
 
--- Tahmini süre (poop arası delay)
 local TimeLabel = Instance.new("TextLabel")
-TimeLabel.Size = UDim2.new(1, -40, 0, 20)
-TimeLabel.Position = UDim2.new(0, 20, 0, 185)
+TimeLabel.Size = UDim2.new(1, -40, 0, 18)
+TimeLabel.Position = UDim2.new(0, 20, 0, 280)
 TimeLabel.BackgroundTransparency = 1
 TimeLabel.Text = "⏱ Tahmini süre: ~0.00s"
 TimeLabel.TextColor3 = Color3.fromRGB(120, 100, 70)
@@ -218,20 +275,19 @@ TimeLabel.TextSize = 12
 TimeLabel.Font = Enum.Font.Gotham
 TimeLabel.Parent = MainFrame
 
--- Ayırıcı çizgi 2
+-- Divider 2
 local Divider2 = Instance.new("Frame")
 Divider2.Size = UDim2.new(1, -40, 0, 1)
-Divider2.Position = UDim2.new(0, 20, 0, 212)
+Divider2.Position = UDim2.new(0, 20, 0, 305)
 Divider2.BackgroundColor3 = Color3.fromRGB(139, 90, 43)
 Divider2.BackgroundTransparency = 0.5
 Divider2.BorderSizePixel = 0
 Divider2.Parent = MainFrame
 
 -- ─── BÖLÜM: COOLDOWN ───
-
 local CooldownSectionLabel = Instance.new("TextLabel")
 CooldownSectionLabel.Size = UDim2.new(1, -40, 0, 26)
-CooldownSectionLabel.Position = UDim2.new(0, 20, 0, 220)
+CooldownSectionLabel.Position = UDim2.new(0, 20, 0, 313)
 CooldownSectionLabel.BackgroundTransparency = 1
 CooldownSectionLabel.Text = "Kullanım Cooldown"
 CooldownSectionLabel.TextColor3 = Color3.fromRGB(180, 140, 100)
@@ -240,25 +296,19 @@ CooldownSectionLabel.Font = Enum.Font.GothamBold
 CooldownSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
 CooldownSectionLabel.Parent = MainFrame
 
--- Cooldown görsel bar container
 local CooldownFrame = Instance.new("Frame")
 CooldownFrame.Size = UDim2.new(1, -40, 0, 52)
-CooldownFrame.Position = UDim2.new(0, 20, 0, 248)
+CooldownFrame.Position = UDim2.new(0, 20, 0, 341)
 CooldownFrame.BackgroundColor3 = Color3.fromRGB(25, 18, 35)
 CooldownFrame.BorderSizePixel = 0
 CooldownFrame.Parent = MainFrame
+Instance.new("UICorner", CooldownFrame).CornerRadius = UDim.new(0, 10)
 
-local CooldownCorner = Instance.new("UICorner")
-CooldownCorner.CornerRadius = UDim.new(0, 10)
-CooldownCorner.Parent = CooldownFrame
-
-local CooldownStroke = Instance.new("UIStroke")
+local CooldownStroke = Instance.new("UIStroke", CooldownFrame)
 CooldownStroke.Color = Color3.fromRGB(80, 60, 120)
 CooldownStroke.Transparency = 0.5
 CooldownStroke.Thickness = 1
-CooldownStroke.Parent = CooldownFrame
 
--- Cooldown yazısı
 local CooldownLabel = Instance.new("TextLabel")
 CooldownLabel.Size = UDim2.new(1, 0, 0, 22)
 CooldownLabel.Position = UDim2.new(0, 0, 0, 4)
@@ -269,44 +319,34 @@ CooldownLabel.TextSize = 13
 CooldownLabel.Font = Enum.Font.GothamBold
 CooldownLabel.Parent = CooldownFrame
 
--- Progress bar arka plan
 local BarBg = Instance.new("Frame")
 BarBg.Size = UDim2.new(1, -16, 0, 10)
 BarBg.Position = UDim2.new(0, 8, 0, 34)
 BarBg.BackgroundColor3 = Color3.fromRGB(40, 30, 55)
 BarBg.BorderSizePixel = 0
 BarBg.Parent = CooldownFrame
+Instance.new("UICorner", BarBg).CornerRadius = UDim.new(0, 5)
 
-local BarBgCorner = Instance.new("UICorner")
-BarBgCorner.CornerRadius = UDim.new(0, 5)
-BarBgCorner.Parent = BarBg
-
--- Progress bar dolgu
 local BarFill = Instance.new("Frame")
 BarFill.Size = UDim2.new(0, 0, 1, 0)
-BarFill.Position = UDim2.new(0, 0, 0, 0)
 BarFill.BackgroundColor3 = Color3.fromRGB(100, 220, 100)
 BarFill.BorderSizePixel = 0
 BarFill.Parent = BarBg
+Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0, 5)
 
-local BarFillCorner = Instance.new("UICorner")
-BarFillCorner.CornerRadius = UDim.new(0, 5)
-BarFillCorner.Parent = BarFill
-
--- Ayırıcı çizgi 3
+-- Divider 3
 local Divider3 = Instance.new("Frame")
 Divider3.Size = UDim2.new(1, -40, 0, 1)
-Divider3.Position = UDim2.new(0, 20, 0, 310)
+Divider3.Position = UDim2.new(0, 20, 0, 403)
 Divider3.BackgroundColor3 = Color3.fromRGB(139, 90, 43)
 Divider3.BackgroundTransparency = 0.5
 Divider3.BorderSizePixel = 0
 Divider3.Parent = MainFrame
 
 -- ─── BÖLÜM: DURUM & BUTON ───
-
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, -40, 0, 26)
-StatusLabel.Position = UDim2.new(0, 20, 0, 318)
+StatusLabel.Position = UDim2.new(0, 20, 0, 410)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Hazır!"
 StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
@@ -316,7 +356,7 @@ StatusLabel.Parent = MainFrame
 
 local PoopBtn = Instance.new("TextButton")
 PoopBtn.Size = UDim2.new(1, -40, 0, 72)
-PoopBtn.Position = UDim2.new(0, 20, 0, 352)
+PoopBtn.Position = UDim2.new(0, 20, 0, 445)
 PoopBtn.BackgroundColor3 = Color3.fromRGB(101, 55, 0)
 PoopBtn.Text = "💩  Poop!"
 PoopBtn.TextColor3 = Color3.fromRGB(255, 230, 150)
@@ -324,10 +364,7 @@ PoopBtn.TextSize = 22
 PoopBtn.Font = Enum.Font.GothamBold
 PoopBtn.BorderSizePixel = 0
 PoopBtn.Parent = MainFrame
-
-local PoopCorner = Instance.new("UICorner")
-PoopCorner.CornerRadius = UDim.new(0, 12)
-PoopCorner.Parent = PoopBtn
+Instance.new("UICorner", PoopBtn).CornerRadius = UDim.new(0, 12)
 
 local PoopGradient = Instance.new("UIGradient")
 PoopGradient.Color = ColorSequence.new({
@@ -337,11 +374,10 @@ PoopGradient.Color = ColorSequence.new({
 PoopGradient.Rotation = 90
 PoopGradient.Parent = PoopBtn
 
-local PoopStroke = Instance.new("UIStroke")
+local PoopStroke = Instance.new("UIStroke", PoopBtn)
 PoopStroke.Color = Color3.fromRGB(220, 150, 50)
 PoopStroke.Transparency = 0.3
 PoopStroke.Thickness = 1.5
-PoopStroke.Parent = PoopBtn
 
 -- ─── FONKSİYONLAR ───
 
@@ -349,23 +385,54 @@ local function updateDisplay()
     NumberDisplay.Text = tostring(poopCount)
     local totalTime = (poopCount - 1) * 0.4
     TimeLabel.Text = "⏱ Tahmini süre: ~" .. string.format("%.2f", totalTime) .. "s"
-    if poopCount <= minCount then
-        MinusBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 5)
-        MinusBtn.TextColor3 = Color3.fromRGB(100, 70, 40)
-    else
-        MinusBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 10)
-        MinusBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
-    end
-    if poopCount >= maxCount then
-        PlusBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 5)
-        PlusBtn.TextColor3 = Color3.fromRGB(100, 70, 40)
-    else
-        PlusBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 10)
-        PlusBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
+
+    MinusBtn.BackgroundColor3 = poopCount <= minCount and Color3.fromRGB(40, 20, 5) or Color3.fromRGB(80, 40, 10)
+    MinusBtn.TextColor3 = poopCount <= minCount and Color3.fromRGB(100, 70, 40) or Color3.fromRGB(255, 200, 100)
+    PlusBtn.BackgroundColor3 = poopCount >= maxCount and Color3.fromRGB(40, 20, 5) or Color3.fromRGB(80, 40, 10)
+    PlusBtn.TextColor3 = poopCount >= maxCount and Color3.fromRGB(100, 70, 40) or Color3.fromRGB(255, 200, 100)
+end
+
+-- Adım seçimi güncelle
+local function setStep(amount)
+    stepAmount = amount
+    StepIndicator.Text = "Seçili adım: +" .. tostring(amount)
+
+    -- Aktif butonu vurgula
+    Step1Btn.BackgroundColor3 = Color3.fromRGB(40, 60, 40)
+    Step5Btn.BackgroundColor3 = Color3.fromRGB(40, 30, 10)
+    Step10Btn.BackgroundColor3 = Color3.fromRGB(40, 30, 10)
+
+    if amount == 1 then
+        Step1Btn.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
+        StepIndicator.TextColor3 = Color3.fromRGB(150, 255, 150)
+    elseif amount == 5 then
+        Step5Btn.BackgroundColor3 = Color3.fromRGB(160, 90, 10)
+        StepIndicator.TextColor3 = Color3.fromRGB(255, 200, 100)
+    elseif amount == 10 then
+        Step10Btn.BackgroundColor3 = Color3.fromRGB(160, 90, 10)
+        StepIndicator.TextColor3 = Color3.fromRGB(255, 180, 80)
     end
 end
 
--- Cooldown bar animasyonu
+Step1Btn.MouseButton1Click:Connect(function() setStep(1) end)
+Step5Btn.MouseButton1Click:Connect(function() setStep(5) end)
+Step10Btn.MouseButton1Click:Connect(function() setStep(10) end)
+
+MinusBtn.MouseButton1Click:Connect(function()
+    if poopCount > minCount then
+        poopCount = math.max(minCount, poopCount - stepAmount)
+        updateDisplay()
+    end
+end)
+
+PlusBtn.MouseButton1Click:Connect(function()
+    if poopCount < maxCount then
+        poopCount = math.min(maxCount, poopCount + stepAmount)
+        updateDisplay()
+    end
+end)
+
+-- Cooldown animasyonu
 local function startCooldown()
     isOnCooldown = true
     PoopBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 5)
@@ -379,24 +446,17 @@ local function startCooldown()
     for i = steps, 0, -1 do
         local remaining = i * stepTime
         local progress = i / steps
-
         CooldownLabel.Text = "🕐 Cooldown: " .. string.format("%.1f", remaining) .. "s"
         CooldownLabel.TextColor3 = Color3.fromRGB(220, 120, 80)
-
-        -- Bar doluluk oranı (geri sayım: dolu → boş)
         TweenService:Create(BarFill, TweenInfo.new(stepTime, Enum.EasingStyle.Linear), {
             Size = UDim2.new(progress, 0, 1, 0)
         }):Play()
-
-        -- Renk geçişi: kırmızı → turuncu → yeşil
         local r = math.floor(220 * progress + 80 * (1 - progress))
         local g = math.floor(80 * progress + 220 * (1 - progress))
         BarFill.BackgroundColor3 = Color3.fromRGB(r, g, 60)
-
         task.wait(stepTime)
     end
 
-    -- Cooldown bitti
     isOnCooldown = false
     CooldownLabel.Text = "✅ Hazır"
     CooldownLabel.TextColor3 = Color3.fromRGB(100, 220, 100)
@@ -407,37 +467,18 @@ local function startCooldown()
     PoopBtn.TextColor3 = Color3.fromRGB(255, 230, 150)
 end
 
-MinusBtn.MouseButton1Click:Connect(function()
-    if poopCount > minCount then
-        poopCount = poopCount - 1
-        updateDisplay()
-    end
-end)
-
-PlusBtn.MouseButton1Click:Connect(function()
-    if poopCount < maxCount then
-        poopCount = poopCount + 1
-        updateDisplay()
-    end
-end)
-
 PoopBtn.MouseEnter:Connect(function()
     if not isOnCooldown and not isSending then
-        TweenService:Create(PoopBtn, TweenInfo.new(0.15), {
-            BackgroundColor3 = Color3.fromRGB(130, 75, 5)
-        }):Play()
+        TweenService:Create(PoopBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(130, 75, 5)}):Play()
     end
 end)
 
 PoopBtn.MouseLeave:Connect(function()
     if not isOnCooldown and not isSending then
-        TweenService:Create(PoopBtn, TweenInfo.new(0.15), {
-            BackgroundColor3 = Color3.fromRGB(101, 55, 0)
-        }):Play()
+        TweenService:Create(PoopBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(101, 55, 0)}):Play()
     end
 end)
 
--- Poop gönderme
 PoopBtn.MouseButton1Click:Connect(function()
     if isOnCooldown or isSending then return end
     isSending = true
@@ -450,22 +491,18 @@ PoopBtn.MouseButton1Click:Connect(function()
 
     for i = 1, poopCount do
         local ok, _ = pcall(function()
-            local args = {
-                buffer.fromstring("\000\000\000\000")
-            }
+            local args = { buffer.fromstring("\000\000\000\000") }
             game:GetService("ReplicatedStorage"):WaitForChild("Packets"):WaitForChild("Packet"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
         end)
 
         if ok then success = success + 1 else failed = failed + 1 end
-
         StatusLabel.Text = "Gönderiliyor... (" .. i .. "/" .. poopCount .. ")"
 
         if i < poopCount then
             local delay = 0.4
             local steps = 40
             for t = steps, 1, -1 do
-                local remaining = t * (delay / steps)
-                TimeLabel.Text = "⏱ Bekleniyor: " .. string.format("%.2f", remaining) .. "s"
+                TimeLabel.Text = "⏱ Bekleniyor: " .. string.format("%.2f", t * (delay / steps)) .. "s"
                 task.wait(delay / steps)
             end
             TimeLabel.Text = "⏱ Tahmini süre: ~" .. string.format("%.2f", (poopCount - 1) * 0.4) .. "s"
@@ -482,17 +519,11 @@ PoopBtn.MouseButton1Click:Connect(function()
         StatusLabel.TextColor3 = Color3.fromRGB(255, 160, 60)
     end
 
-    -- Cooldown başlat
     task.spawn(startCooldown)
 
     task.wait(2.5)
-    if not isOnCooldown then
-        StatusLabel.Text = "Hazır!"
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-    else
-        StatusLabel.Text = "Cooldown bekleniyor..."
-        StatusLabel.TextColor3 = Color3.fromRGB(180, 120, 60)
-    end
+    StatusLabel.Text = isOnCooldown and "Cooldown bekleniyor..." or "Hazır!"
+    StatusLabel.TextColor3 = isOnCooldown and Color3.fromRGB(180, 120, 60) or Color3.fromRGB(100, 200, 100)
 end)
 
 -- Sürükleme
@@ -513,18 +544,18 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- Insert tuşuyla aç/kapat
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
     end
 end)
+
+-- Başlangıçta +1 seçili
+setStep(1)
+updateDisplay()
 
 print("💩 Poop GUI başarıyla yüklendi! | [Insert] = Aç/Kapat")
