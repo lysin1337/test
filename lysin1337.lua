@@ -50,7 +50,7 @@ local GlowLabel = Instance.new("TextLabel")
 GlowLabel.Size = UDim2.new(1, 0, 1, 0)
 GlowLabel.BackgroundTransparency = 1
 GlowLabel.Text = "lysin1337"
-GlowLabel.TextColor3 = Color3.fromRGB(255, 160, 40)
+GlowLabel.TextColor3 = Color3.fromRGB(120, 60, 180)
 GlowLabel.TextTransparency = 0.85
 GlowLabel.TextSize = 82
 GlowLabel.Font = Enum.Font.GothamBlack
@@ -62,7 +62,7 @@ local IntroText = Instance.new("TextLabel")
 IntroText.Size = UDim2.new(1, 0, 1, 0)
 IntroText.BackgroundTransparency = 1
 IntroText.Text = "lysin1337"
-IntroText.TextColor3 = Color3.fromRGB(255, 200, 80)
+IntroText.TextColor3 = Color3.fromRGB(150, 80, 220)
 IntroText.TextTransparency = 1
 IntroText.TextSize = 72
 IntroText.Font = Enum.Font.GothamBlack
@@ -71,9 +71,9 @@ IntroText.Parent = GlowFrame
 
 local UIGradientIntro = Instance.new("UIGradient")
 UIGradientIntro.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 240, 120)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 180, 40)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 100, 10))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 150, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 70, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 20, 120))
 })
 UIGradientIntro.Rotation = 45
 UIGradientIntro.Parent = IntroText
@@ -83,7 +83,7 @@ local UnderLine = Instance.new("Frame")
 UnderLine.Size = UDim2.new(0, 0, 0, 3)
 UnderLine.Position = UDim2.new(0.5, 0, 1, 8)
 UnderLine.AnchorPoint = Vector2.new(0.5, 0)
-UnderLine.BackgroundColor3 = Color3.fromRGB(255, 180, 40)
+UnderLine.BackgroundColor3 = Color3.fromRGB(130, 70, 200)
 UnderLine.BackgroundTransparency = 1
 UnderLine.BorderSizePixel = 0
 UnderLine.ZIndex = 101
